@@ -2,6 +2,7 @@
 # Files and directories to ignore during Vercel deployment
 
 # Development files
+.env
 .env.local
 .env.development
 

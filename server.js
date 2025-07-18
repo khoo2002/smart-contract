@@ -2,7 +2,6 @@ const express = require('express');
 const multer = require('multer');
 const pinataSDK = require('@pinata/sdk');
 const { ethers } = require('ethers');
-const fs = require('fs');
 const cors = require('cors');
 require('dotenv').config();
 
@@ -10,7 +9,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.')); // Serve static files from current directory
-const upload = multer({ dest: 'uploads/' });
+
+// Configure multer for memory storage (Vercel compatible)
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 const CONTRACT_ADDRESS = '0x7d92744F76a0b866c0068e2872bcFDeB009d92C3';
 const ABI = require('./abi.json');
@@ -281,30 +287,34 @@ app.post('/submit', upload.fields([{ name: 'evidence' }, { name: 'receipt' }]), 
       return res.status(400).json({ error: 'Missing required files: evidence and receipt' });
     }
 
-    const evidencePath = req.files.evidence[0].path;
-    const receiptPath = req.files.receipt[0].path;
-    console.log('📁 File paths:', { evidencePath, receiptPath });
+    const evidenceFile = req.files.evidence[0];
+    const receiptFile = req.files.receipt[0];
+    console.log('📁 Files info:', { 
+      evidence: evidenceFile.originalname, 
+      receipt: receiptFile.originalname,
+      evidenceSize: evidenceFile.size,
+      receiptSize: receiptFile.size
+    });
 
     console.log('📤 Uploading to Pinata...');
-    const evidenceStream = fs.createReadStream(evidencePath);
-    const receiptStream = fs.createReadStream(receiptPath);
 
     const evidenceOptions = {
       pinataMetadata: {
-        name: req.files.evidence[0].originalname || 'evidence-file'
+        name: evidenceFile.originalname || 'evidence-file'
       }
     };
 
     const receiptOptions = {
       pinataMetadata: {
-        name: req.files.receipt[0].originalname || 'receipt-file'
+        name: receiptFile.originalname || 'receipt-file'
       }
     };
 
-    const evidenceResult = await pinata.pinFileToIPFS(evidenceStream, evidenceOptions);
+    // Upload files using buffer (memory storage)
+    const evidenceResult = await pinata.pinFileToIPFS(evidenceFile.buffer, evidenceOptions);
     console.log('✅ Evidence uploaded:', evidenceResult.IpfsHash);
     
-    const receiptResult = await pinata.pinFileToIPFS(receiptStream, receiptOptions);
+    const receiptResult = await pinata.pinFileToIPFS(receiptFile.buffer, receiptOptions);
     console.log('✅ Receipt uploaded:', receiptResult.IpfsHash);
 
     console.log('🔗 Calling smart contract...');
