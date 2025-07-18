@@ -3,16 +3,27 @@
 <html>
 <head>
   <title>Social Program Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    * {
+      box-sizing: border-box;
+    }
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 800px; 
+      margin: 0 auto; 
+      padding: 15px; 
+      background-color: #f8f9fa;
+    }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: #f5f5f5;
-      border-radius: 8px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .program-info {
       display: flex;
@@ -20,29 +31,202 @@
       gap: 5px;
     }
     .program-name {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
       color: #007cba;
     }
     .organization-name {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
     }
     .uuid {
-      font-size: 12px;
+      font-size: 11px;
       color: #999;
       font-family: monospace;
     }
-    form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    label { display: block; margin: 10px 0 5px; font-weight: bold; }
-    input[type="text"], input[type="file"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
-    button { background: #007cba; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
-    button:hover { background: #005a87; }
-    .result { background: #e8f5e8; border: 1px solid #4caf50; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .error { background: #ffeaea; border: 1px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .link { color: #007cba; text-decoration: none; font-weight: bold; }
-    .link:hover { text-decoration: underline; }
-    .hidden { display: none; }
+    form { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label { 
+      display: block; 
+      margin: 15px 0 8px; 
+      font-weight: bold; 
+      color: #333;
+    }
+    input[type="text"], input[type="number"], input[type="file"] { 
+      width: 100%; 
+      padding: 12px; 
+      margin-bottom: 15px; 
+      border: 2px solid #e9ecef; 
+      border-radius: 8px;
+      font-size: 16px; /* Prevents zoom on iOS */
+      transition: border-color 0.3s ease;
+    }
+    input[type="text"]:focus, input[type="number"]:focus, input[type="file"]:focus {
+      outline: none;
+      border-color: #007cba;
+    }
+    button { 
+      background: #007cba; 
+      color: white; 
+      padding: 14px 24px; 
+      border: none; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-size: 16px;
+      width: 100%;
+      margin-bottom: 10px;
+      transition: background-color 0.3s ease;
+      touch-action: manipulation; /* Improves touch responsiveness */
+    }
+    button:hover, button:active { 
+      background: #005a87; 
+    }
+    button:disabled { 
+      background: #6c757d; 
+      cursor: not-allowed; 
+    }
+    button.loading { 
+      background: #ffc107; 
+      color: #000; 
+    }
+    button.success { 
+      background: #28a745; 
+      color: white; 
+    }
+    button.error { 
+      background: #dc3545; 
+      color: white; 
+    }
+    .result { 
+      background: #d1edff; 
+      border: 2px solid #007cba; 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-top: 20px;
+      word-break: break-word;
+    }
+    .error { 
+      background: #ffe6e6; 
+      border: 2px solid #dc3545; 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-top: 20px;
+      word-break: break-word;
+    }
+    .link { 
+      color: #007cba; 
+      text-decoration: none; 
+      font-weight: bold; 
+    }
+    .link:hover { 
+      text-decoration: underline; 
+    }
+    .hidden { 
+      display: none; 
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      
+      .program-name {
+        font-size: 16px;
+      }
+      
+      .organization-name {
+        font-size: 13px;
+      }
+      
+      .uuid {
+        font-size: 10px;
+      }
+      
+      form {
+        padding: 15px;
+      }
+      
+      h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+      }
+      
+      label {
+        font-size: 14px;
+        margin: 12px 0 6px;
+      }
+      
+      input[type="text"], input[type="number"] {
+        padding: 14px; /* Larger touch targets */
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      
+      button {
+        padding: 16px 24px;
+        font-size: 16px;
+        margin-top: 10px;
+      }
+      
+      .result, .error {
+        padding: 12px;
+        margin-top: 15px;
+      }
+      
+      .result h3, .error h3 {
+        font-size: 16px;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 18px;
+      }
+      
+      .program-name {
+        font-size: 15px;
+      }
+      
+      .organization-name {
+        font-size: 12px;
+      }
+      
+      form {
+        padding: 12px;
+      }
+      
+      h2 {
+        font-size: 16px;
+      }
+      
+      label {
+        font-size: 13px;
+      }
+      
+      input[type="text"], input[type="number"] {
+        padding: 12px;
+        font-size: 16px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -61,9 +245,9 @@
     <label>Organization: <input type="text" name="organization" id="organizationInput" required readonly /></label>
     <label>Milestones (comma separated): <input type="text" name="milestones" required /></label>
     <label>Amount (MYR): <input type="number" name="amount" step="0.01" min="0" required /></label>
-    <label>Evidence File: <input type="file" name="evidence" required /></label>
-    <label>Receipt File: <input type="file" name="receipt" required /></label>
-    <button type="submit">Submit</button>
+    <label>Evidence File: <input type="file" name="evidence" accept="image/*,.pdf,.doc,.docx" title="Upload evidence file for your reference only" /></label>
+    <label>Receipt File: <input type="file" name="receipt" accept="image/*,.pdf" title="Upload receipt file for your reference only" /></label>
+    <button type="submit" id="submitBtn">Submit</button>
   </form>
   
   <div id="result" class="hidden"></div>
@@ -102,14 +286,29 @@
     const form = document.getElementById('recordForm');
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const data = new FormData(form);
-      const milestones = data.get('milestones').split(',').map(m => m.trim());
-      data.set('milestones', JSON.stringify(milestones));
+      const submitBtn = document.getElementById('submitBtn');
+      const formData = new FormData(form);
+      
+      // Update button to loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting...';
+      submitBtn.className = 'loading';
+      
+      // Convert form data to JSON
+      const data = {
+        pic: formData.get('pic'),
+        organization: formData.get('organization'),
+        milestones: formData.get('milestones').split(',').map(m => m.trim()),
+        amount: formData.get('amount')
+      };
 
       try {
         const res = await fetch(`${API_BASE}/submit`, {
           method: 'POST',
-          body: data
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data)
         });
         
         let json;
@@ -125,15 +324,36 @@
         
         if (res.ok && json.success) {
           const txHash = json.txHash;
-          const formData = new FormData(form);
+          
+          // Update button to success state
+          submitBtn.textContent = '✅ Submitted Successfully!';
+          submitBtn.className = 'success';
           
           // Create and show transaction details
-          showTransactionResult(txHash, formData.get('amount'), formData.get('pic'), formData.get('organization'), formData.get('milestones'));
+          showTransactionResult(txHash, data.amount, data.pic, data.organization, data.milestones.join(', '));
         } else {
+          // Update button to error state
+          submitBtn.textContent = '❌ Submission Failed';
+          submitBtn.className = 'error';
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit';
+            submitBtn.className = '';
+          }, 3000);
+          
           alert('Error: ' + (json.error || json.message || 'Unknown error occurred'));
           console.error('Full error details:', json);
         }
       } catch (error) {
+        // Update button to error state
+        submitBtn.textContent = '❌ Network Error';
+        submitBtn.className = 'error';
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit';
+          submitBtn.className = '';
+        }, 3000);
+        
         alert('Network error: ' + error.message);
         console.error('Network error:', error);
       }
@@ -146,6 +366,13 @@
       resultDiv.innerHTML = `
         <h3>✅ Transaction Successful!</h3>
         <p><strong>Transaction Hash:</strong> ${txHash}</p>
+        
+        <div style="background: #e3f2fd; border: 1px solid #2196f3; padding: 12px; border-radius: 8px; margin: 15px 0; font-size: 14px;">
+          <strong>📎 Attached Files (IPFS):</strong><br>
+          Evidence: <a href="https://maroon-known-crayfish-466.mypinata.cloud/ipfs/bafkreigs5e2t7zwvpq3nqvwqqruy44yj55fgl4oysejq4s4ostn5zxjsxa" target="_blank" class="link">evidence.txt</a><br>
+          Receipt: <a href="https://maroon-known-crayfish-466.mypinata.cloud/ipfs/bafkreifs47iuaerx4zwj43fedb3h63z657hhawxxb4glfv6bvbkghpfz3y" target="_blank" class="link">receipt.txt</a>
+        </div>
+        
         <p>
           <a href="/explorer/${txHash}" target="_blank" class="link">🔗 View on Etherscan</a> | 
           <a href="#" onclick="fetchTransactionDetails('${txHash}')" class="link">📋 View Details</a> |
@@ -154,6 +381,9 @@
         <div id="txDetails"></div>
       `;
       resultDiv.classList.remove('hidden');
+      
+      // Scroll to result
+      resultDiv.scrollIntoView({ behavior: 'smooth' });
     }
 
     // Function to fetch and display transaction details

@@ -2,16 +2,27 @@
 <html>
 <head>
   <title>Payment Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    * {
+      box-sizing: border-box;
+    }
+    body { 
+      font-family: Arial, sans-serif; 
+      max-width: 800px; 
+      margin: 0 auto; 
+      padding: 15px; 
+      background-color: #f8f9fa;
+    }
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
-      padding: 20px;
-      background: #f5f5f5;
-      border-radius: 8px;
+      margin-bottom: 20px;
+      padding: 15px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     .user-info {
       display: flex;
@@ -19,31 +30,50 @@
       gap: 5px;
     }
     .username {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: bold;
       color: #007cba;
     }
     .program-org {
-      font-size: 16px;
+      font-size: 14px;
       color: #666;
     }
     .contact-info {
-      font-size: 14px;
+      font-size: 13px;
       color: #888;
     }
     .uuid {
-      font-size: 12px;
+      font-size: 11px;
       color: #999;
       font-family: monospace;
     }
-    form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
-    label { display: block; margin: 10px 0 5px; font-weight: bold; }
-    input[type="text"], input[type="tel"], input[type="number"] { 
+    form { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label { 
+      display: block; 
+      margin: 15px 0 8px; 
+      font-weight: bold; 
+      color: #333;
+    }
+    input[type="text"], input[type="tel"], input[type="number"], textarea { 
       width: 100%; 
-      padding: 8px; 
-      margin-bottom: 10px; 
-      border: 1px solid #ddd; 
-      border-radius: 4px; 
+      padding: 12px; 
+      margin-bottom: 15px; 
+      border: 2px solid #e9ecef; 
+      border-radius: 8px;
+      font-size: 16px; /* Prevents zoom on iOS */
+      transition: border-color 0.3s ease;
+      font-family: inherit;
+      resize: vertical;
+    }
+    input[type="text"]:focus, input[type="tel"]:focus, input[type="number"]:focus, textarea:focus {
+      outline: none;
+      border-color: #007cba;
     }
     input[readonly] {
       background-color: #f8f9fa;
@@ -52,30 +82,197 @@
     button { 
       background: #28a745; 
       color: white; 
-      padding: 12px 24px; 
+      padding: 14px 24px; 
       border: none; 
-      border-radius: 4px; 
+      border-radius: 8px; 
       cursor: pointer; 
       font-size: 16px; 
       width: 100%;
+      margin-bottom: 10px;
+      transition: background-color 0.3s ease;
+      touch-action: manipulation; /* Improves touch responsiveness */
     }
-    button:hover { background: #218838; }
-    button:disabled { background: #6c757d; cursor: not-allowed; }
-    .result { background: #d4edda; border: 1px solid #28a745; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .error { background: #f8d7da; border: 1px solid #dc3545; padding: 15px; border-radius: 8px; margin-top: 20px; }
-    .link { color: #007cba; text-decoration: none; font-weight: bold; }
-    .link:hover { text-decoration: underline; }
-    .hidden { display: none; }
-    .loading { opacity: 0.6; pointer-events: none; }
+    button:hover, button:active { 
+      background: #218838; 
+    }
+    button:disabled { 
+      background: #6c757d; 
+      cursor: not-allowed; 
+    }
+    button.loading { 
+      background: #ffc107; 
+      color: #000; 
+    }
+    button.success { 
+      background: #28a745; 
+      color: white; 
+    }
+    button.error { 
+      background: #dc3545; 
+      color: white; 
+    }
+    .result { 
+      background: #d1f2eb; 
+      border: 2px solid #28a745; 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-top: 20px;
+      word-break: break-word;
+    }
+    .error { 
+      background: #ffe6e6; 
+      border: 2px solid #dc3545; 
+      padding: 15px; 
+      border-radius: 12px; 
+      margin-top: 20px;
+      word-break: break-word;
+    }
+    .link { 
+      color: #007cba; 
+      text-decoration: none; 
+      font-weight: bold; 
+    }
+    .link:hover { 
+      text-decoration: underline; 
+    }
+    .hidden { 
+      display: none; 
+    }
+    .loading { 
+      opacity: 0.6; 
+      pointer-events: none; 
+    }
     .amount-display {
       font-size: 18px;
       font-weight: bold;
       color: #28a745;
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       background: #f8f9fa;
-      border-radius: 4px;
-      margin: 10px 0;
+      border-radius: 8px;
+      margin: 15px 0;
+      border: 2px solid #e9ecef;
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 15px;
+      }
+      
+      .header h1 {
+        font-size: 20px;
+        margin: 0;
+      }
+      
+      .username {
+        font-size: 16px;
+      }
+      
+      .program-org {
+        font-size: 13px;
+      }
+      
+      .contact-info {
+        font-size: 12px;
+      }
+      
+      .uuid {
+        font-size: 10px;
+      }
+      
+      form {
+        padding: 15px;
+      }
+      
+      h2 {
+        font-size: 18px;
+        margin-bottom: 15px;
+      }
+      
+      label {
+        font-size: 14px;
+        margin: 12px 0 6px;
+      }
+      
+      input[type="text"], input[type="tel"], input[type="number"], textarea {
+        padding: 14px; /* Larger touch targets */
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      
+      textarea {
+        min-height: 80px;
+      }
+      
+      button {
+        padding: 16px 24px;
+        font-size: 16px;
+        margin-top: 10px;
+      }
+      
+      .amount-display {
+        font-size: 16px;
+        padding: 10px;
+        margin: 12px 0;
+      }
+      
+      .result, .error {
+        padding: 12px;
+        margin-top: 15px;
+      }
+      
+      .result h3, .error h3 {
+        font-size: 16px;
+        margin-top: 0;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 {
+        font-size: 18px;
+      }
+      
+      .username {
+        font-size: 15px;
+      }
+      
+      .program-org {
+        font-size: 12px;
+      }
+      
+      .contact-info {
+        font-size: 11px;
+      }
+      
+      form {
+        padding: 12px;
+      }
+      
+      h2 {
+        font-size: 16px;
+      }
+      
+      label {
+        font-size: 13px;
+      }
+      
+      input[type="text"], input[type="tel"], input[type="number"], textarea {
+        padding: 12px;
+        font-size: 16px;
+      }
+      
+      .amount-display {
+        font-size: 15px;
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -100,7 +297,7 @@
     <label>Mobile: <input type="tel" name="mobile" id="mobileInput" required readonly /></label>
     <label>TIN: <input type="text" name="tin" id="tinInput" required readonly /></label>
     <label>Amount (MYR): <input type="number" name="amount" step="0.01" min="0" required /></label>
-    <label>Remarks: <textarea name="remarks" id="remarksInput" rows="3" placeholder="Optional payment remarks or description..." style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; resize: vertical; font-family: inherit;"></textarea></label>
+    <label>Remarks: <textarea name="remarks" id="remarksInput" rows="3" placeholder="Optional payment remarks or description..."></textarea></label>
     <div class="amount-display" id="amountDisplay">Enter amount above</div>
     <button type="submit" id="submitBtn">Submit Payment</button>
   </form>
@@ -171,6 +368,7 @@
       // Disable form during submission
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing Payment...';
+      submitBtn.className = 'loading';
       form.classList.add('loading');
 
       try {
@@ -201,18 +399,36 @@
         
         if (res.ok && json.success) {
           const txHash = json.txHash;
+          
+          // Update button to success state
+          submitBtn.textContent = '✅ Payment Submitted!';
+          submitBtn.className = 'success';
+          
           showPaymentResult(txHash, formData.get('amount'), formData.get('username'), formData.get('programOrganization'), formData.get('mobile'), formData.get('tin'), formData.get('remarks') || 'No remarks provided');
         } else {
+          // Update button to error state
+          submitBtn.textContent = '❌ Payment Failed';
+          submitBtn.className = 'error';
+          
           showError('Payment Error: ' + (json.error || json.message || 'Unknown error occurred'));
           console.error('Full error details:', json);
         }
       } catch (error) {
+        // Update button to error state
+        submitBtn.textContent = '❌ Network Error';
+        submitBtn.className = 'error';
+        
         showError('Network error: ' + error.message);
         console.error('Network error:', error);
       } finally {
-        // Re-enable form
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Payment';
+        // Re-enable form only if there was an error
+        if (submitBtn.className === 'error') {
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Payment';
+            submitBtn.className = '';
+          }, 3000);
+        }
         form.classList.remove('loading');
       }
     };

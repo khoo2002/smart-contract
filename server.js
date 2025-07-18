@@ -1,6 +1,4 @@
 const express = require('express');
-const multer = require('multer');
-const pinataSDK = require('@pinata/sdk');
 const { ethers } = require('ethers');
 const cors = require('cors');
 require('dotenv').config();
@@ -9,14 +7,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.')); // Serve static files from current directory
-
-// Configure multer for memory storage (Vercel compatible)
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
 
 const CONTRACT_ADDRESS = '0x7d92744F76a0b866c0068e2872bcFDeB009d92C3';
 const ABI = require('./abi.json');
@@ -45,7 +35,7 @@ if (PAYMENT_CONTRACT_ADDRESS !== 'YOUR_PAYMENT_CONTRACT_ADDRESS') {
   console.log('⚠️  Warning: PAYMENT_CONTRACT_ADDRESS not set. Please deploy your payment contract and update the address.');
 }
 
-const pinata = new pinataSDK(process.env.PINATA_API_KEY, process.env.PINATA_SECRET_KEY);
+const pinata = null; // Removed Pinata dependency
 
 // Hardcoded access control for program tracker
 function validateProgramAccess(req, res, next) {
@@ -260,7 +250,7 @@ app.get('/entries/:id', async (req, res) => {
   }
 });
 
-app.post('/submit', upload.fields([{ name: 'evidence' }, { name: 'receipt' }]), async (req, res) => {
+app.post('/submit', async (req, res) => {
   console.log('📝 Submit request received');
   try {
     if (!contract) {
@@ -270,7 +260,6 @@ app.post('/submit', upload.fields([{ name: 'evidence' }, { name: 'receipt' }]), 
 
     console.log('✅ Contract initialized');
     console.log('📋 Request body:', req.body);
-    console.log('📁 Files:', Object.keys(req.files || {}));
 
     const { pic, organization, milestones, amount } = req.body;
     
@@ -279,43 +268,8 @@ app.post('/submit', upload.fields([{ name: 'evidence' }, { name: 'receipt' }]), 
       return res.status(400).json({ error: 'Missing required fields: pic, organization, milestones, or amount' });
     }
 
-    const milestoneList = JSON.parse(milestones);
-    console.log('📊 Parsed milestones:', milestoneList);
-
-    if (!req.files || !req.files.evidence || !req.files.receipt) {
-      console.log('❌ Missing files');
-      return res.status(400).json({ error: 'Missing required files: evidence and receipt' });
-    }
-
-    const evidenceFile = req.files.evidence[0];
-    const receiptFile = req.files.receipt[0];
-    console.log('📁 Files info:', { 
-      evidence: evidenceFile.originalname, 
-      receipt: receiptFile.originalname,
-      evidenceSize: evidenceFile.size,
-      receiptSize: receiptFile.size
-    });
-
-    console.log('📤 Uploading to Pinata...');
-
-    const evidenceOptions = {
-      pinataMetadata: {
-        name: evidenceFile.originalname || 'evidence-file'
-      }
-    };
-
-    const receiptOptions = {
-      pinataMetadata: {
-        name: receiptFile.originalname || 'receipt-file'
-      }
-    };
-
-    // Upload files using buffer (memory storage)
-    const evidenceResult = await pinata.pinFileToIPFS(evidenceFile.buffer, evidenceOptions);
-    console.log('✅ Evidence uploaded:', evidenceResult.IpfsHash);
-    
-    const receiptResult = await pinata.pinFileToIPFS(receiptFile.buffer, receiptOptions);
-    console.log('✅ Receipt uploaded:', receiptResult.IpfsHash);
+    const milestoneList = Array.isArray(milestones) ? milestones : JSON.parse(milestones);
+    console.log('� Parsed milestones:', milestoneList);
 
     console.log('🔗 Calling smart contract...');
     
@@ -328,9 +282,11 @@ app.post('/submit', upload.fields([{ name: 'evidence' }, { name: 'receipt' }]), 
     const amountInCents = Math.round(parseFloat(amount) * 100);
     console.log('💰 Amount in cents:', amountInCents);
     
-    // Combine IPFS hashes with comma separator
-    const combinedIpfsHashes = `ipfs://${evidenceResult.IpfsHash},ipfs://${receiptResult.IpfsHash}`;
-    console.log('🔗 Combined IPFS:', combinedIpfsHashes);
+    // Use your provided IPFS hashes
+    const evidenceIpfs = 'ipfs://bafkreigs5e2t7zwvpq3nqvwqqruy44yj55fgl4oysejq4s4ostn5zxjsxa'; // evidence.txt
+    const receiptIpfs = 'ipfs://bafkreifs47iuaerx4zwj43fedb3h63z657hhawxxb4glfv6bvbkghpfz3y';   // receipt.txt
+    const combinedIpfsHashes = `${evidenceIpfs},${receiptIpfs}`;
+    console.log('🔗 Using provided IPFS hashes:', combinedIpfsHashes);
     
     const tx = await contract.addProgramEntry(
       pic,
