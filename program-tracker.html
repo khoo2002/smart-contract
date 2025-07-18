@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Social Program Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f5f5f5;
+      border-radius: 8px;
+    }
+    .program-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .program-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #007cba;
+    }
+    .organization-name {
+      font-size: 16px;
+      color: #666;
+    }
+    .uuid {
+      font-size: 12px;
+      color: #999;
+      font-family: monospace;
+    }
+    form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+    label { display: block; margin: 10px 0 5px; font-weight: bold; }
+    input[type="text"], input[type="file"], input[type="number"] { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; }
+    button { background: #007cba; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #005a87; }
+    .result { background: #e8f5e8; border: 1px solid #4caf50; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .error { background: #ffeaea; border: 1px solid #f44336; padding: 15px; border-radius: 8px; margin-top: 20px; }
+    .link { color: #007cba; text-decoration: none; font-weight: bold; }
+    .link:hover { text-decoration: underline; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🏛️ Social Program Tracker</h1>
+    <div class="program-info">
+      <div class="program-name" id="programName">Loading...</div>
+      <div class="organization-name" id="organizationName">Loading...</div>
+      <div class="uuid" id="uuid">Loading...</div>
+    </div>
+  </div>
+
+  <h2>Submit Record</h2>
+  <form id="recordForm">
+    <label>Program Name: <input type="text" name="pic" id="programInput" required readonly /></label>
+    <label>Organization: <input type="text" name="organization" id="organizationInput" required readonly /></label>
+    <label>Milestones (comma separated): <input type="text" name="milestones" required /></label>
+    <label>Amount (MYR): <input type="number" name="amount" step="0.01" min="0" required /></label>
+    <label>Evidence File: <input type="file" name="evidence" required /></label>
+    <label>Receipt File: <input type="file" name="receipt" required /></label>
+    <button type="submit">Submit</button>
+  </form>
+  
+  <div id="result" class="hidden"></div>
+  <script>
+    // Get base URL for API calls
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:3001' : '';
+    
+    // Initialize page with URL parameters
+    function initializePage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const programName = urlParams.get('Program');
+      const organizationName = urlParams.get('Organization');
+      const uuid = urlParams.get('uuid');
+      
+      if (!programName || !organizationName || !uuid) {
+        document.body.innerHTML = `
+          <div style="text-align: center; padding: 50px;">
+            <h1>❌ Access Denied</h1>
+            <p>Invalid access parameters. Please use the correct URL format.</p>
+            <p><code>/program-tracker?Program=YourProgram&Organization=YourOrganization&uuid=YourUUID</code></p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Update header with program info
+      document.getElementById('programName').textContent = programName;
+      document.getElementById('organizationName').textContent = organizationName;
+      document.getElementById('uuid').textContent = `UUID: ${uuid}`;
+      
+      // Pre-fill form fields
+      document.getElementById('programInput').value = programName;
+      document.getElementById('organizationInput').value = organizationName;
+    }
+    
+    const form = document.getElementById('recordForm');
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const data = new FormData(form);
+      const milestones = data.get('milestones').split(',').map(m => m.trim());
+      data.set('milestones', JSON.stringify(milestones));
+
+      try {
+        const res = await fetch(`${API_BASE}/submit`, {
+          method: 'POST',
+          body: data
+        });
+        
+        let json;
+        const contentType = res.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          json = await res.json();
+        } else {
+          // Handle non-JSON responses
+          const text = await res.text();
+          json = { error: text };
+        }
+        
+        if (res.ok && json.success) {
+          const txHash = json.txHash;
+          const formData = new FormData(form);
+          
+          // Create and show transaction details
+          showTransactionResult(txHash, formData.get('amount'), formData.get('pic'), formData.get('organization'), formData.get('milestones'));
+        } else {
+          alert('Error: ' + (json.error || json.message || 'Unknown error occurred'));
+          console.error('Full error details:', json);
+        }
+      } catch (error) {
+        alert('Network error: ' + error.message);
+        console.error('Network error:', error);
+      }
+    };
+
+    // Function to show transaction result
+    async function showTransactionResult(txHash, amount, programName, organization, milestones) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.className = 'result';
+      resultDiv.innerHTML = `
+        <h3>✅ Transaction Successful!</h3>
+        <p><strong>Transaction Hash:</strong> ${txHash}</p>
+        <p>
+          <a href="/explorer/${txHash}" target="_blank" class="link">🔗 View on Etherscan</a> | 
+          <a href="#" onclick="fetchTransactionDetails('${txHash}')" class="link">📋 View Details</a> |
+          <a href="#" onclick="generateProgramReceipt('${txHash}', '${amount}', '${programName}', '${organization}', '${milestones}')" class="link">💾 Save Receipt</a>
+        </p>
+        <div id="txDetails"></div>
+      `;
+      resultDiv.classList.remove('hidden');
+    }
+
+    // Function to fetch and display transaction details
+    async function fetchTransactionDetails(txHash) {
+      try {
+        const response = await fetch(`${API_BASE}/transaction/${txHash}`);
+        const details = await response.json();
+        
+        const detailsDiv = document.getElementById('txDetails');
+        if (response.ok) {
+          detailsDiv.innerHTML = `
+            <hr>
+            <h4>Transaction Details:</h4>
+            <p><strong>Status:</strong> ${details.status}</p>
+            <p><strong>Block Number:</strong> ${details.blockNumber}</p>
+            <p><strong>From:</strong> ${details.from}</p>
+            <p><strong>Gas Used:</strong> ${details.gasUsed}</p>
+            <p><strong>Timestamp:</strong> ${new Date(details.timestamp).toLocaleString()}</p>
+            ${details.contractCallData ? `
+              <h4>Program Entry Data:</h4>
+              <p><strong>Program:</strong> ${details.contractCallData.picName}</p>
+              <p><strong>Organization:</strong> ${details.contractCallData.organizationName}</p>
+              <p><strong>Milestone:</strong> ${details.contractCallData.milestone}</p>
+              <p><strong>Amount:</strong> ${details.contractCallData.amount} MYR</p>
+              <p><strong>Evidence IPFS:</strong> <a href="https://gateway.pinata.cloud/ipfs/${details.contractCallData.evidenceIpfsHash.replace('ipfs://', '')}" target="_blank" class="link">${details.contractCallData.evidenceIpfsHash}</a></p>
+              <p><strong>Receipt IPFS:</strong> <a href="https://gateway.pinata.cloud/ipfs/${details.contractCallData.receiptIpfsHash.replace('ipfs://', '')}" target="_blank" class="link">${details.contractCallData.receiptIpfsHash}</a></p>
+            ` : ''}
+          `;
+        } else {
+          detailsDiv.innerHTML = `<p class="error">Failed to fetch details: ${details.error}</p>`;
+        }
+      } catch (error) {
+        document.getElementById('txDetails').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+      }
+    }
+    
+    // Function to generate and download program submission receipt
+    function generateProgramReceipt(txHash, amount, programName, organization, milestones) {
+      try {
+        // Decode URL-encoded parameters
+        programName = decodeURIComponent(programName);
+        organization = decodeURIComponent(organization);
+        milestones = decodeURIComponent(milestones);
+        
+        // Create receipt content
+        const currentDate = new Date().toLocaleString();
+        const receiptContent = `
+PROGRAM SUBMISSION RECEIPT
+═══════════════════════════════════════════════════
+
+Submission Details:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Program Name: ${programName}
+Organization: ${organization}
+Milestones: ${milestones}
+Amount: RM ${parseFloat(amount).toFixed(2)}
+
+Transaction Information:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Transaction Hash: ${txHash}
+Date & Time: ${currentDate}
+Blockchain: Ethereum Sepolia Testnet
+Etherscan URL: https://sepolia.etherscan.io/tx/${txHash}
+
+═══════════════════════════════════════════════════
+This is a digitally generated receipt for blockchain
+program submission. Please keep this for your records.
+        `.trim();
+
+        // Create and download the file
+        const blob = new Blob([receiptContent], { type: 'text/plain;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `program-receipt-${timestamp}.txt`;
+        
+        link.href = url;
+        link.download = filename;
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up URL
+        window.URL.revokeObjectURL(url);
+        
+        // Show success message
+        alert(`Receipt saved as: ${filename}\n\nThe receipt has been downloaded to your device.`);
+        
+      } catch (error) {
+        console.error('Error generating receipt:', error);
+        alert('Error generating receipt: ' + error.message);
+      }
+    }
+    
+    // Initialize page when it loads
+    initializePage();
+  </script>
+</body>
+</html>

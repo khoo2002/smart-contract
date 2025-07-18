@@ -1,0 +1,16 @@
+version: 1
+services:
+  - type: web
+    name: social-program-tracker
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: ANKR_URL
+        sync: false
+      - key: PRIVATE_KEY
+        sync: false
+      - key: PINATA_API_KEY
+        sync: false
+      - key: PINATA_SECRET_KEY
+        sync: false

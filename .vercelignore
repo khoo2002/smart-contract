@@ -1,0 +1,41 @@
+# Vercel ignore file
+# Files and directories to ignore during Vercel deployment
+
+# Development files
+.env.local
+.env.development
+
+# Source files that don't need to be deployed
+contracts/
+scripts/
+test/
+cache/
+artifacts/
+
+# Documentation
+README.md
+*.md
+
+# Git files
+.git/
+.gitignore
+
+# IDE files
+.vscode/
+.idea/
+
+# Temporary files
+uploads/
+tmp/
+temp/
+
+# Test files
+*.test.js
+test-*.js
+
+# Hardhat config
+hardhat.config.js
+
+# Lock files (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
